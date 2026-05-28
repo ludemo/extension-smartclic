@@ -83,6 +83,11 @@
         "icon": "$(beaker)"
       },
       {
+        "command": "smartclic.importmap.stopBuildLibrary",
+        "title": "Detener build",
+        "icon": "$(primitive-square)"
+      },
+      {
         "command": "smartclic.importmap.yalcAdd",
         "title": "Usar yalc local",
         "icon": "$(plug)"
@@ -171,7 +176,12 @@
         },
         {
           "command": "smartclic.importmap.buildLibrary",
-          "when": "view == smartclic.importmapView && viewItem =~ /^library/",
+          "when": "view == smartclic.importmapView && viewItem =~ /^library/ && !(viewItem =~ /building/)",
+          "group": "inline"
+        },
+        {
+          "command": "smartclic.importmap.stopBuildLibrary",
+          "when": "view == smartclic.importmapView && viewItem =~ /^library.*building/",
           "group": "inline"
         },
         {

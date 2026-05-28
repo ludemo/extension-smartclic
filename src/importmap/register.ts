@@ -16,9 +16,10 @@ const yalcStatuses    = new Map<string, YalcStatus>();
 const yalcPending     = new Map<string, YalcPendingState>();
 const yalcJustUpdated = new Set<string>();
 
-const libStatus: LibStatus = { state: 'idle', percent: undefined, hasDir: false, sbState: undefined, sbRunning: null };
+const libStatus: LibStatus = { state: 'idle', percent: undefined, hasDir: false, sbState: undefined, sbRunning: null, sbPercent: undefined };
 let   libDir: string | null = null;
 let   libOutput: vscode.OutputChannel | null = null;
+let   libBuildProcess: ReturnType<typeof spawn> | null = null;
 
 let sbProcess: ReturnType<typeof spawn> | null = null;
 let sbOutput:  vscode.OutputChannel | null = null;
@@ -218,6 +219,20 @@ function getLibOutput(): vscode.OutputChannel {
   return libOutput;
 }
 
+function stopLibraryBuild(onUpdate: () => void): void {
+  if (!libBuildProcess) { return; }
+  const proc = libBuildProcess;
+  libBuildProcess = null;
+  libStatus.state = 'idle';
+  libStatus.percent = undefined;
+  onUpdate();
+  if (process.platform === 'win32' && proc.pid) {
+    spawn('taskkill', ['/F', '/T', '/PID', String(proc.pid)], { shell: true });
+  } else {
+    proc.kill('SIGTERM');
+  }
+}
+
 function buildAndPublishLibrary(onUpdate: () => void): void {
   if (!libDir) { return; }
   if (libStatus.state === 'building') { return; }
@@ -230,6 +245,7 @@ function buildAndPublishLibrary(onUpdate: () => void): void {
   out.clear();
 
   const build = spawn('npm', ['run', 'build:library-dev'], { cwd: libDir, shell: true });
+  libBuildProcess = build;
 
   const handle = (data: Buffer) => {
     const text = stripAnsi(data.toString());
@@ -245,11 +261,15 @@ function buildAndPublishLibrary(onUpdate: () => void): void {
   build.stderr?.on('data', handle);
 
   build.on('close', code => {
+    const wasAborted = libBuildProcess !== build;
+    libBuildProcess = null;
     if (code !== 0) {
-      libStatus.state = 'idle';
-      libStatus.percent = undefined;
-      vscode.window.showErrorMessage('Error al compilar la librería.');
-      onUpdate();
+      if (!wasAborted) {
+        libStatus.state = 'idle';
+        libStatus.percent = undefined;
+        vscode.window.showErrorMessage('Error al compilar la librería.');
+        onUpdate();
+      }
       return;
     }
 
@@ -319,17 +339,28 @@ function spawnStorybook(onUpdate: () => void): void {
       const prev = libStatus.sbState;
       let next: ProcState | undefined;
 
-      if (/storybook.*started|local:\s*https?:\/\//i.test(text)) {
+      if (/storybook.*started|local:\s*https?:\/\/|on your network:\s*https?:\/\//i.test(text)) {
         next = 'running';
-      } else if (/building storybook|storybook builder/i.test(text)) {
+      } else if (/building storybook|storybook builder|compiling/i.test(text)) {
         next = 'compiling';
-      } else if (/error|failed/i.test(text)) {
+      } else if (/ERR_STORYBOOK|build failed|failed to compile|error command failed/i.test(text)) {
         next = 'error';
       }
 
       if (next && next !== prev) {
         libStatus.sbState = next;
+        if (next !== 'compiling') { libStatus.sbPercent = undefined; }
         onUpdate();
+      }
+      if (libStatus.sbState === 'compiling') {
+        const m = text.match(/\b(\d{1,3})%/);
+        if (m) {
+          const pct = parseInt(m[1], 10);
+          if (pct !== libStatus.sbPercent) {
+            libStatus.sbPercent = pct;
+            onUpdate();
+          }
+        }
       }
     };
 
@@ -339,6 +370,7 @@ function spawnStorybook(onUpdate: () => void): void {
     child.on('close', () => {
       sbProcess = null;
       libStatus.sbState = undefined;
+      libStatus.sbPercent = undefined;
       onUpdate();
       checkStorybookPort(onUpdate);
     });
@@ -546,6 +578,10 @@ export function registerImportMapView(context: vscode.ExtensionContext): void {
         return;
       }
       buildAndPublishLibrary(() => treeProvider.refresh());
+    }),
+
+    vscode.commands.registerCommand('smartclic.importmap.stopBuildLibrary', () => {
+      stopLibraryBuild(() => treeProvider.refresh());
     }),
 
     // ── Storybook ────────────────────────────────────────────────────────────

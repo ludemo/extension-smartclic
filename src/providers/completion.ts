@@ -10,7 +10,7 @@ function buildTagContext(document: vscode.TextDocument, position: vscode.Positio
   for (let i = position.line - 1; i >= 0 && position.line - i <= 10; i--) {
     const line = document.lineAt(i).text;
     parts.unshift(line);
-    if (/<[\w-]/.test(line)) { break; }
+    if (/^\s*<[\w-]/.test(line)) { break; }
   }
   return parts.join(' ');
 }
@@ -29,7 +29,7 @@ export function createCompletionProvider(
         const tagContext = buildTagContext(document, position);
 
         // Valores de atributo → completions con imagen por variante
-        const attrValueMatch = tagContext.match(/<([\w-]+)[^>]*\s([\w-:]+)="([^"]*)$/);
+        const attrValueMatch = tagContext.match(/<([\w-]+)(?:[^>"']|"[^"]*"|'[^']*')*\s([\w-:]+)="([^"]*)$/);
         if (attrValueMatch) {
           const tagName = attrValueMatch[1];
           const attrName = attrValueMatch[2];
@@ -130,7 +130,7 @@ export function createCompletionProvider(
         }
 
         // Nombres de atributos dentro del tag — usa contexto multi-línea para detectar el tag abierto
-        const tagAttrMatch = tagContext.match(/<([\w-]+)[^>]*\s+[\w-]*$/);
+        const tagAttrMatch = tagContext.match(/<([\w-]+)(?:[^>"']|"[^"]*"|'[^']*')*\s+[\w-]*$/);
         if (tagAttrMatch) {
           const component = components[tagAttrMatch[1]];
           if (!component) { return undefined; }

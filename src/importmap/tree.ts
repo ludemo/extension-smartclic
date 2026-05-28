@@ -21,6 +21,7 @@ export interface LibStatus {
   hasDir: boolean;
   sbState: ProcState | undefined;
   sbRunning: boolean | null; // null = not checked yet
+  sbPercent: number | undefined;
 }
 
 export class LibraryTreeItem extends vscode.TreeItem {
@@ -39,6 +40,7 @@ export class LibraryTreeItem extends vscode.TreeItem {
       this.description = status.percent !== undefined
         ? `compilando... ${status.percent}%`
         : 'compilando...';
+      this.contextValue = 'library-building';
     } else if (status.state === 'published') {
       this.iconPath = new vscode.ThemeIcon('pass', COLOR_LOCAL);
       this.description = 'publicado en yalc ✔';
@@ -50,7 +52,8 @@ export class LibraryTreeItem extends vscode.TreeItem {
 
     if (status.sbState === 'compiling' || status.sbState === 'stopping') {
       this.iconPath = new vscode.ThemeIcon('sync~spin', COLOR_COMPILING);
-      this.description = (this.description ?? '') + ' · storybook ⟳';
+      const sbPct = status.sbPercent !== undefined ? ` ${status.sbPercent}%` : '';
+      this.description = (this.description ?? '') + ` · storybook${sbPct} ⟳`;
       this.contextValue += status.sbState === 'stopping' ? '-sb-stopping' : '-sb-hasprocess';
     } else if (status.sbState === 'running') {
       this.iconPath = new vscode.ThemeIcon('pass', COLOR_LOCAL);
