@@ -3,7 +3,7 @@
   "displayName": "smartclic-devtools",
   "publisher": "angelzevallos",
   "description": "In55telliSense y guías para componentes UI",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "license": "MIT",
   "engines": {
     "vscode": "^1.100.0"
@@ -13,18 +13,27 @@
     "Other"
   ],
   "activationEvents": [
+    "onStartupFinished",
     "onLanguage:vue",
     "onLanguage:html",
     "onLanguage:scss"
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "smartclic",
+          "title": "Import Map",
+          "icon": "media/importmap.svg"
+        }
+      ]
+    },
     "views": {
-      "explorer": [
+      "smartclic": [
         {
           "id": "smartclic.importmapView",
-          "name": "Import Map",
-          "icon": "$(symbol-structure)"
+          "name": "Import Map"
         }
       ]
     },
@@ -236,6 +245,26 @@
           "type": "boolean",
           "default": false,
           "markdownDescription": "Aplicar autofix SCSS al guardar normalmente (`Ctrl+S`). Si está desactivado, usar el atajo `Ctrl+Alt+S` (modificable en _Atajos de teclado_ → buscar `smartclic.scss.fixAndSave`)."
+        },
+        "robertgozu.waifu.message": {
+          "type": "boolean",
+          "default": false,
+          "description": "Mensajes kawaii (bienvenida y diagnósticos SCSS). Si está desactivado, se usan mensajes normales."
+        },
+        "robertgozu.waifu.write": {
+          "type": "boolean",
+          "default": false,
+          "description": "Efecto al escribir: imágenes waifu junto al cursor."
+        },
+        "robertgozu.waifu.tabSound": {
+          "type": "boolean",
+          "default": false,
+          "description": "Reproducir sonido (media/sounds/tab-open.wav) al abrir un archivo en una pestaña nueva."
+        },
+        "robertgozu.waifu.startupSound": {
+          "type": "boolean",
+          "default": false,
+          "description": "Reproducir sonido (media/sounds/startup.wav) al abrir o recargar VS Code / Cursor."
         }
       }
     }

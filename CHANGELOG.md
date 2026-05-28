@@ -7,6 +7,14 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.2.4] — 2026-05-27
+
+### Changed
+
+- Restored waifu settings in `package.json` after merge drift: `robertgozu.waifu.message`, `robertgozu.waifu.write`, `robertgozu.waifu.tabSound`, and `robertgozu.waifu.startupSound`.
+- Re-enabled `onStartupFinished` activation so startup sound setting works again.
+- Kept Import Map icon pinned in Activity Bar using `media/importmap.svg`.
+
 ## [0.2.3] — 2026-05-26
 
 ### Added
